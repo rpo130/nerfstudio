@@ -80,6 +80,7 @@ descriptions = {
     "nerfplayer-nerfacto": "NeRFPlayer with nerfacto backbone.",
     "nerfplayer-ngp": "NeRFPlayer with InstantNGP backbone.",
     "neus": "Implementation of NeuS. (slow)",
+    "localnerf": "local nerf"
 }
 
 method_configs["nerfacto"] = TrainerConfig(
@@ -572,6 +573,33 @@ method_configs["neus-facto"] = TrainerConfig(
     },
     viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
     vis="viewer",
+)
+
+
+from nerfstudio.localy.data.datamanagers.local_datamanager import LocalDataManagerConfig
+from nerfstudio.localy.data.dataparsers.local_dataparser import LocalNerfDataParserConfig
+
+method_configs["localnerf"] = TrainerConfig(
+    method_name="localnerf",
+    steps_per_eval_batch=500,
+    steps_per_save=2000,
+    max_num_iterations=30000,
+    mixed_precision=True,
+    pipeline=DynamicBatchPipelineConfig(
+        datamanager=LocalDataManagerConfig(
+            dataparser= LocalNerfDataParserConfig(),
+            train_num_rays_per_batch=4096,
+        ),
+        model=InstantNGPModelConfig(eval_num_rays_per_chunk=4096),
+    ),
+    optimizers={
+        "fields": {
+            "optimizer": AdamOptimizerConfig(lr=1e-2, eps=1e-15),
+            "scheduler": ExponentialDecaySchedulerConfig(lr_final=0.0001, max_steps=200000),
+        },
+    },
+    viewer=ViewerConfig(num_rays_per_chunk=1 << 12),
+    vis="viewer+wandb",
 )
 
 external_methods, external_descriptions = discover_methods()

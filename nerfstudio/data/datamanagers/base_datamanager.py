@@ -98,6 +98,7 @@ def variable_res_collate(batch: List[Dict]) -> Dict:
 
     return new_batch
 
+from nerfstudio.localy.data.dataparsers.local_dataparser import LocalNerfDataParserConfig
 
 AnnotatedDataParserUnion = tyro.conf.OmitSubcommandPrefixes[  # Omit prefixes of flags in subcommands.
     tyro.extras.subcommand_type_from_defaults(
@@ -115,6 +116,7 @@ AnnotatedDataParserUnion = tyro.conf.OmitSubcommandPrefixes[  # Omit prefixes of
             "sdfstudio-data": SDFStudioDataParserConfig(),
             "nerfosr-data": NeRFOSRDataParserConfig(),
             "sitcoms3d-data": Sitcoms3DDataParserConfig(),
+            "localnerf-data": LocalNerfDataParserConfig(),
         },
         prefix_names=False,  # Omit prefixes in subcommands themselves.
     )

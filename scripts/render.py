@@ -128,6 +128,9 @@ def _render_trajectory_video(
                         sys.exit(1)
                     output_image = outputs[rendered_output_name].cpu().numpy()
                     if output_image.shape[-1] == 1:
+                        if rendered_output_name == "depth":
+                            np.save(os.path.join(output_image_dir, f"{camera_idx:05d}_depth"), output_image)
+
                         output_image = np.concatenate((output_image,) * 3, axis=-1)
                     render_image.append(output_image)
                 render_image = np.concatenate(render_image, axis=1)

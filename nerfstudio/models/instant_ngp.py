@@ -264,4 +264,23 @@ class NGPModel(Model):
             "depth": combined_depth,
         }
 
+        
+        if batch.get("depth_image", None) is not None:
+            ground_truth_depth = batch['depth_image'].to(self.device)
+            depth_mask = ground_truth_depth > 0
+            depth_mask_not = ground_truth_depth == 0
+
+            raw_depth = outputs["depth"]
+
+            metrics_dict["depth_mse"] = float(torch.nn.functional.mse_loss(raw_depth[depth_mask], ground_truth_depth[depth_mask]))
+
+            ground_truth_depth_display = colormaps.apply_depth_colormap(ground_truth_depth)
+
+            depth_display = raw_depth
+            depth_display[depth_mask_not] = 0
+            depth_display = colormaps.apply_depth_colormap(depth_display)
+
+            compare_depth = torch.cat([ground_truth_depth_display, depth_display], dim=1)
+            images_dict["cdepth"] = compare_depth
+
         return metrics_dict, images_dict
