@@ -26,7 +26,10 @@ import tyro
 from nerfstudio.cameras.camera_optimizers import CameraOptimizerConfig
 from nerfstudio.configs.base_config import ViewerConfig
 from nerfstudio.configs.external_methods import get_external_methods
+
+from nerfstudio.data.datamanagers.random_cameras_datamanager import RandomCamerasDataManagerConfig
 from nerfstudio.data.datamanagers.base_datamanager import VanillaDataManager, VanillaDataManagerConfig
+
 from nerfstudio.data.dataparsers.blender_dataparser import BlenderDataParserConfig
 from nerfstudio.data.dataparsers.dnerf_dataparser import DNeRFDataParserConfig
 from nerfstudio.data.dataparsers.instant_ngp_dataparser import InstantNGPDataParserConfig
@@ -47,6 +50,7 @@ from nerfstudio.engine.trainer import TrainerConfig
 from nerfstudio.field_components.temporal_distortions import TemporalDistortionKind
 from nerfstudio.fields.sdf_field import SDFFieldConfig
 from nerfstudio.models.depth_nerfacto import DepthNerfactoModelConfig
+from nerfstudio.models.generfacto import GenerfactoModelConfig
 from nerfstudio.models.instant_ngp import InstantNGPModelConfig
 from nerfstudio.models.mipnerf import MipNerfModel
 from nerfstudio.models.nerfacto import NerfactoModelConfig
@@ -72,6 +76,7 @@ descriptions = {
     "tensorf": "tensorf",
     "dnerf": "Dynamic-NeRF model. (slow)",
     "phototourism": "Uses the Phototourism data.",
+    "generfacto": "Generative Text to NeRF model",
     "neus": "Implementation of NeuS. (slow)",
     "neus-facto": "Implementation of NeuS-Facto. (slow)",
 }
@@ -131,7 +136,6 @@ method_configs["nerfacto-big"] = TrainerConfig(
             hidden_dim=128,
             hidden_dim_color=128,
             appearance_embed_dim=128,
-            base_res=32,
             max_res=4096,
             proposal_weights_anneal_max_num_iters=5000,
             log2_hashmap_size=21,
@@ -178,8 +182,6 @@ method_configs["nerfacto-huge"] = TrainerConfig(
             hidden_dim=256,
             hidden_dim_color=256,
             appearance_embed_dim=32,
-            features_per_level=4,
-            base_res=32,
             max_res=8192,
             proposal_weights_anneal_max_num_iters=5000,
             log2_hashmap_size=21,
@@ -480,6 +482,51 @@ method_configs["phototourism"] = TrainerConfig(
         },
     },
     viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
+    vis="viewer",
+)
+
+method_configs["generfacto"] = TrainerConfig(
+    method_name="generfacto",
+    experiment_name="",
+    steps_per_eval_batch=50,
+    steps_per_eval_image=50,
+    steps_per_save=200,
+    max_num_iterations=30000,
+    mixed_precision=True,
+    pipeline=VanillaPipelineConfig(
+        datamanager=RandomCamerasDataManagerConfig(
+            horizontal_rotation_warmup=3000,
+        ),
+        model=GenerfactoModelConfig(
+            eval_num_rays_per_chunk=1 << 15,
+            distortion_loss_mult=1.0,
+            interlevel_loss_mult=100.0,
+            max_res=256,
+            sphere_collider=True,
+            initialize_density=True,
+            taper_range=(0, 2000),
+            random_background=True,
+            proposal_warmup=2000,
+            proposal_update_every=0,
+            proposal_weights_anneal_max_num_iters=2000,
+            start_lambertian_training=500,
+            start_normals_training=2000,
+            opacity_loss_mult=0.001,
+            positional_prompting="discrete",
+            guidance_scale=25,
+        ),
+    ),
+    optimizers={
+        "proposal_networks": {
+            "optimizer": AdamOptimizerConfig(lr=1e-3, eps=1e-15),
+            "scheduler": None,
+        },
+        "fields": {
+            "optimizer": AdamOptimizerConfig(lr=5e-4, eps=1e-15),
+            "scheduler": None,
+        },
+    },
+    viewer=ViewerConfig(),
     vis="viewer",
 )
 
