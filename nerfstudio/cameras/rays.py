@@ -63,7 +63,10 @@ class Frustums(TensorDataclass):
         Returns:
             xyz positions.
         """
-        return self.origins + self.directions * self.starts
+        pos = self.origins + self.directions * self.starts
+        if self.offsets is not None:
+            pos = pos + self.offsets
+        return pos
 
     def set_offsets(self, offsets):
         """Sets offsets for this frustum for computing positions"""
